@@ -8,8 +8,9 @@
   "num_cpus": 20
 
 "data_params":
-  "base_dataset_path": ".../datasets" # Add correct dataset path here ".../datasets"
+  "base_dataset_path": "./data/custom_datasets" # Add correct dataset path here ".../datasets"
   "dataset_type": "knapsack"
+  "cap": 100
   "loader_params":
     "batch_size": 8
     "shuffle": true

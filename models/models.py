@@ -61,7 +61,7 @@ class KnapsackExtractWeightsCostFromEmbeddingMLP(MLP):
     def __init__(self, num_constraints=1, embed_dim=4096, knapsack_capacity=1.0, weight_min=0.15, weight_max=0.35,
                  cost_min=0.10, cost_max=0.45, output_nonlinearity='sigmoid', **kwargs):
         self.num_constraints = num_constraints
-
+        print("knapsack_capacity", knapsack_capacity)
         self.knapsack_capacity = knapsack_capacity
         self.weight_min = weight_min
         self.weight_range = weight_max - weight_min

@@ -7,7 +7,7 @@ verify_ssl = true
 
 [packages]
 numpy = "*"
-torch = "==1.5.0"
+torch = ">=1.9.0"
 ray = "*"
 jax = ">=0.2.8"
 jaxlib = ">=0.1.58"
@@ -16,4 +16,4 @@ cvxpylayers = "*"
 
 
 [requires]
-python_version = "3.6"
+python_version = "==3.9"

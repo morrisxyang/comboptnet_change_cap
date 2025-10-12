@@ -38,18 +38,36 @@ def static_constraint_dataloader(dataset_path, dataset_specification, num_gt_var
     return (train_iterator, test_iterator), datasets['metadata']
 
 
-def knapsack_dataloader(dataset_path, loader_params):
+def knapsack_dataloader(dataset_path, loader_params, cap=None):
     variable_range = dict(lb=0, ub=1)
     num_variables = 10
 
     train_encodings = np.load(os.path.join(dataset_path, 'train_encodings.npy'))
-    train_ys = compute_normalized_solution(np.load(os.path.join(dataset_path, 'train_sols.npy')), **variable_range)
+
+    def _pick_sols_file(base_name):
+        if cap is not None:
+            cap_path = os.path.join(dataset_path, f"{base_name}_cap{cap}.npy")
+            if os.path.exists(cap_path):
+                return cap_path
+            raise FileNotFoundError(
+                f"Capacity-specific file not found: {cap_path}. "
+                f"Please provide this file or remove 'cap' from data_params.")
+        return os.path.join(dataset_path, f"{base_name}.npy")
+
+    train_sols_path = _pick_sols_file('train_sols')
+    test_sols_path = _pick_sols_file('test_sols')
+
+    # Informative log for which files are used
+    print(f"Knapsack: using train solutions file: {os.path.basename(train_sols_path)}")
+    print(f"Knapsack: using test solutions file: {os.path.basename(test_sols_path)}")
+
+    train_ys = compute_normalized_solution(np.load(train_sols_path), **variable_range)
     train_dataset = list(zip(train_encodings, train_ys))
     training_set = Dataset(train_dataset)
     train_iterator = data.DataLoader(training_set, **loader_params)
 
     test_encodings = np.load(os.path.join(dataset_path, 'test_encodings.npy'))
-    test_ys = compute_normalized_solution(np.load(os.path.join(dataset_path, 'test_sols.npy')), **variable_range)
+    test_ys = compute_normalized_solution(np.load(test_sols_path), **variable_range)
     test_dataset = list(zip(test_encodings, test_ys))
     test_set = Dataset(test_dataset)
     test_iterator = data.DataLoader(test_set, **loader_params)
