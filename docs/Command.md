@@ -1,11 +1,15 @@
 ## 常用命令
 
 ### 运行实验
+具体配置在 
+- [base.yaml](../experiments/knapsack/base.yaml)
+- [comboptnet.yaml](../experiments/knapsack/comboptnet.yaml)
 ```
 python3 main.py experiments/knapsack/comboptnet.yaml
 ```
 
 ### 查看数据集
+具体文件在代码中配置
 
 ```
 python scripts/inspect_knapsack.py \
