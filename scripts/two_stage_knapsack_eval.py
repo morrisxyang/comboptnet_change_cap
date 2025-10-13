@@ -85,8 +85,7 @@ def two_stage_correction_obj_only_drop(
 
     # Objective (fixed penalty per dropped item):
     # obj = gp.quicksum(purchase_fee * prices[i] * x[i] - compensation_fee * prices[i] * sigma[i] for i in range(n))  # price-weighted penalty (disabled)
-    obj = (gp.quicksum(purchase_fee * prices[i] * x[i] for i in range(n)) -
-           compensation_fee * gp.quicksum(sigma[i] for i in range(n)))
+    obj = (gp.quicksum(purchase_fee * prices[i] * x[i] for i in range(n)) - compensation_fee * gp.quicksum(sigma[i] for i in range(n)))
     model.setObjective(obj, GRB.MAXIMIZE)
 
     # Capacity after drops: (x - sigma) must satisfy capacity with real weights
@@ -175,6 +174,8 @@ def main():
     parser.add_argument("--limit", type=int, default=300, help="Evaluate only the first N instances (<=0 uses all)")
     args = parser.parse_args()
 
+    print(f"args:{args}")
+
     instances, pred_sols, opt_sols_file = load_data(args.dataset_dir, args.capacity)
     print(f"instances.shape: {instances.shape}, pred_sols.shape: {pred_sols.shape}, opt_sols.shape: {opt_sols_file.shape}")
 
@@ -198,6 +199,7 @@ def main():
 
     mismatch_obj_count = 0
     mismatch_vec_count = 0
+    perfect_pred_vec_count = 0
 
     for i in range(n_instances):
         wp = instances[i]
@@ -206,7 +208,7 @@ def main():
         pred = pred_sols[i].astype(float)
 
         # Two-stage correction (Stage 2 with fixed prediction)
-        x2, corr_obj, num_changes = two_stage_correction_obj_add_drop(
+        x2, corr_obj, num_changes = two_stage_correction_obj_only_drop(
             pred_sol=pred,
             weights=weights,
             prices=prices,
@@ -218,8 +220,10 @@ def main():
         changed_counts[i] = num_changes
         # Components for post-hoc regret
         pred_rounded = np.rint(pred).astype(int)
-        # penalty_i = float(args.compensation_fee * np.dot(prices, pred_rounded - final_x))  # price-weighted (disabled)
+
+        # penalty_i = float(args.compensation_fee * np.dot(prices, pred_rounded - x2))  # price-weighted (disabled)
         penalty_i = float(args.compensation_fee * np.sum(np.abs(pred_rounded - x2)))
+
         obj2_i = float(args.purchase_fee * np.dot(prices, x2))
         penalties[i] = penalty_i
         obj_stage2[i] = obj2_i
@@ -244,6 +248,10 @@ def main():
 
         regrets[i] = penalty_i + optimal_objs[i] - obj_stage2[i]
 
+        # Perfect prediction stats
+        if np.array_equal(pred_rounded, x_opt.astype(int)):
+            perfect_pred_vec_count += 1
+
         if i < args.preview:
             print(f"Instance {i}:")
             print(f"  capacity: {args.capacity:.6f}, weights: {weights}, prices:{prices}")
@@ -266,16 +274,14 @@ def main():
     print(f"Reference vs Gurobi objective mismatches: {mismatch_obj_count}")
     print(f"Reference vs Gurobi vector mismatches:    {mismatch_vec_count}")
     print(f"Feasible prediction ratio: {pred_feasible.mean():.4f}")
-    print(f"Avg changed items (when correcting): {changed_counts.mean():.3f}")
-    print(f"Post-hoc regret: mean {regrets.mean():.6f} ± std {regrets.std(ddof=1):.6f}")
+    # print(f"Avg changed items (when correcting): {changed_counts.mean():.3f}")
+    print(f"Post-hoc regret: mean {regrets.mean():.6f}")
+    print(f"Perfect prediction rate (vector equality): {(perfect_pred_vec_count / n_instances):.4f} ({perfect_pred_vec_count}/{n_instances})")
 
-    zero_mask = np.isclose(regrets, 0.0, atol=1e-9)
-    print(f"Zero-regret ratio: {zero_mask.mean():.4f} ({int(zero_mask.sum())}/{n_instances})")
-    # # Print only non-zero regrets with original indices
-    # nz_idx = np.where(~zero_mask)[0]
-    # print("Nonzero post-hoc regrets (per instance):")
-    # for idx in nz_idx:
+    # for idx in range(len(regrets)):
     #     print(f"  [{idx}] {regrets[idx]:.6f}")
+
+    # print(f"Post-hoc regret: mean {np.mean(regrets):.6f} ± std {regrets.std():.6f}")
 
 
 if __name__ == "__main__":
