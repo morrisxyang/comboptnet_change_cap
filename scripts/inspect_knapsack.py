@@ -70,11 +70,12 @@ def main():
     base = args.dataset_dir
     files = {
         "train_encodings": os.path.join(base, "train_encodings.npy"),
-        "train_sols": os.path.join(base, "train_sols.npy"),
+        "train_sols": os.path.join(base, "train_sols_cap100.npy"),
         "test_encodings": os.path.join(base, "test_encodings.npy"),
-        "test_sols": os.path.join(base, "test_sols.npy"),
-        "weights_prices": os.path.join(base, "weights_prices.npy"),
+        "test_sols": os.path.join(base, "test_sols_cap100.npy"),
+         #"weights_prices": os.path.join(base, "weights_prices.npy"),
         "test_instances": os.path.join(base, "test_instances.npy"),
+        "test_sols_pred": os.path.join(base, "test_sols_pred.npy"),
     }
 
     print(f"Dataset directory: {base}")
@@ -87,8 +88,9 @@ def main():
     train_sols = np.load(files["train_sols"], allow_pickle=False)
     test_enc = np.load(files["test_encodings"], allow_pickle=False)
     test_sols = np.load(files["test_sols"], allow_pickle=False)
-    weights_prices = np.load(files["weights_prices"], allow_pickle=False)
+    # weights_prices = np.load(files["weights_prices"], allow_pickle=False)
     test_instances = np.load(files["test_instances"], allow_pickle=False)
+    test_sols_pred = np.load(files["test_sols_pred"], allow_pickle=False)
 
 
     # Summaries
@@ -98,8 +100,8 @@ def main():
     # summarize_array("test_sols", test_sols, args.limit)
     # summarize_array("weights_prices", weights_prices, args.limit)
     # summarize_array("test_instances", test_instances, args.limit)
-    print(test_instances[0])
-    print(test_sols[0])
+    summarize_array("test_sols_pred", test_sols_pred, args.limit)
+
 
     # Solution sanity checks
     # check_binary_solutions("train_sols", train_sols)

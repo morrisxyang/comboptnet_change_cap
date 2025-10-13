@@ -33,12 +33,15 @@ def static_constraint_dataloader(dataset_path, dataset_specification, num_gt_var
     training_set = Dataset(datasets['train'][:train_dataset_size])
     train_iterator = data.DataLoader(training_set, **loader_params)
 
-    test_iterator = data.DataLoader(Dataset(datasets['test']), **loader_params)
+    # Force test loader to never shuffle regardless of provided params
+    test_loader_params = dict(loader_params) if loader_params is not None else {}
+    test_loader_params['shuffle'] = False
+    test_iterator = data.DataLoader(Dataset(datasets['test']), **test_loader_params)
 
     return (train_iterator, test_iterator), datasets['metadata']
 
 
-def knapsack_dataloader(dataset_path, loader_params, cap=None):
+def knapsack_dataloader(dataset_path, loader_params, cap=None, train_dataset_size=None):
     variable_range = dict(lb=0, ub=1)
     num_variables = 10
 
@@ -62,6 +65,13 @@ def knapsack_dataloader(dataset_path, loader_params, cap=None):
     print(f"Knapsack: using test solutions file: {os.path.basename(test_sols_path)}")
 
     train_ys = compute_normalized_solution(np.load(train_sols_path), **variable_range)
+
+    # Optionally limit number of training samples
+    if train_dataset_size is not None:
+        print(f"Knapsack: limiting training samples to {train_dataset_size}")
+        train_encodings = train_encodings[:train_dataset_size]
+        train_ys = train_ys[:train_dataset_size]
+
     train_dataset = list(zip(train_encodings, train_ys))
     training_set = Dataset(train_dataset)
     train_iterator = data.DataLoader(training_set, **loader_params)
@@ -70,7 +80,11 @@ def knapsack_dataloader(dataset_path, loader_params, cap=None):
     test_ys = compute_normalized_solution(np.load(test_sols_path), **variable_range)
     test_dataset = list(zip(test_encodings, test_ys))
     test_set = Dataset(test_dataset)
-    test_iterator = data.DataLoader(test_set, **loader_params)
+
+    # Force test loader to never shuffle regardless of provided params
+    test_loader_params = dict(loader_params) if loader_params is not None else {}
+    test_loader_params['shuffle'] = False
+    test_iterator = data.DataLoader(test_set, **test_loader_params)
 
     distinct_ys_train = len(set([tuple(y) for y in train_ys]))
     distinct_ys_test = len(set([tuple(y) for y in test_ys]))

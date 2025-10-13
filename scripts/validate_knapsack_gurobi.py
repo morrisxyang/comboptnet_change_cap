@@ -6,16 +6,16 @@ import numpy as np
 
 
 def load_data(dataset_dir: str) -> Tuple[np.ndarray, np.ndarray]:
-    # instances_path = os.path.join(dataset_dir, "test_instances.npy")
-    # sols_path = os.path.join(dataset_dir, "test_sols_cap250.npy")
-    instances_path = os.path.join(dataset_dir, "train_instances.npy")
-    sols_path = os.path.join(dataset_dir, "train_sols_cap150.npy")
+    instances_path = os.path.join(dataset_dir, "test_instances.npy")
+    sols_path = os.path.join(dataset_dir, "test_sols_pred_cap150.npy")
+    # instances_path = os.path.join(dataset_dir, "train_instances.npy")
+    # sols_path = os.path.join(dataset_dir, "train_sols_cap150.npy")
     if not os.path.isfile(instances_path):
         raise FileNotFoundError(f"Missing file: {instances_path}")
     if not os.path.isfile(sols_path):
         raise FileNotFoundError(f"Missing file: {sols_path}")
     instances = np.load(instances_path, allow_pickle=False)  # shape: (N, 10, 2) => [weight, price]
-    sols = np.load(sols_path, allow_pickle=False)            # shape: (N, 10) => 0/1
+    sols = np.load(sols_path, allow_pickle=False)  # shape: (N, 10) => 0/1
     return instances, sols
 
 
@@ -60,6 +60,7 @@ def validate(dataset_dir: str, capacity: float, atol_obj: float) -> int:
         raise ValueError(f"Shape mismatch between sols {sols.shape} and instances {instances.shape}")
 
     n_instances = instances.shape[0]
+    n_sols = sols.shape[0]
     n_items = instances.shape[1]
 
     mismatches = []
@@ -111,17 +112,20 @@ def validate(dataset_dir: str, capacity: float, atol_obj: float) -> int:
     # Print report
     print(f"Checked {n_instances} instances with capacity={capacity}.")
     print(f"Mismatches: {len(mismatches)}\n")
-    for m in mismatches:
-        print("== MISMATCH ==")
-        print(f"index: {m['index']}")
-        print(f"binary_ok: {m['binary_ok']}, feasible: {m['feasible']}")
-        print(f"provided_obj: {m['provided_obj']:.6f}, optimal_obj: {m['optimal_obj']:.6f}")
-        print(f"provided_weight: {m['provided_weight']:.6f}, capacity: {m['capacity']:.6f}")
-        print(f"weights: {np.array2string(m['weights'], precision=6, separator=', ')}")
-        print(f"prices: {np.array2string(m['prices'], precision=6, separator=', ')}")
-        print(f"provided_solution: {m['provided_solution']}")
-        print(f"optimal_solution:   {m['optimal_solution']}")
-        print("")
+    print(f"len(n_instances): {n_instances}m len(sols): {len(sols)}")
+    acc = (n_instances - len(mismatches)) / n_instances
+    print(f"acc: {acc:.2f}")
+    # for m in mismatches:
+    #     print("== MISMATCH ==")
+    #     print(f"index: {m['index']}")
+    #     print(f"binary_ok: {m['binary_ok']}, feasible: {m['feasible']}")
+    #     print(f"provided_obj: {m['provided_obj']:.6f}, optimal_obj: {m['optimal_obj']:.6f}")
+    #     print(f"provided_weight: {m['provided_weight']:.6f}, capacity: {m['capacity']:.6f}")
+    #     print(f"weights: {np.array2string(m['weights'], precision=6, separator=', ')}")
+    #     print(f"prices: {np.array2string(m['prices'], precision=6, separator=', ')}")
+    #     print(f"provided_solution: {m['provided_solution']}")
+    #     print(f"optimal_solution:   {m['optimal_solution']}")
+    #     print("")
 
     return len(mismatches)
 
@@ -150,5 +154,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

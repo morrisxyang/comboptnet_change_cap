@@ -36,6 +36,14 @@ python scripts/generate_knapsack_solutions_gurobi.py \
 ```
 
 
+python scripts/two_stage_knapsack_eval.py \
+--dataset-dir data/custom_datasets/knapsack \
+--capacity 150 \
+--purchase-fee 1.0 \
+--compensation-fee 5 \
+--preview 5 
+
+
 
 
 

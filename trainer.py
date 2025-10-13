@@ -57,16 +57,32 @@ class BaseTrainer(ABC):
         results = metrics.get_averages(prefix='train_')
         return results
 
-    def evaluate(self):
+    def evaluate(self, save_predictions_path=None):
         self.train = False
         metrics = AvgMeters()
+        save_preds = save_predictions_path is not None
+        preds_batches = [] if save_preds else None
 
         for i, data in enumerate(self.test_iterator):
             x, y_true_norm = [dat.to(self.device) for dat in data]
             loss, metric_dct = self.calculate_loss_metrics(x=x, y_true_norm=y_true_norm)
             metrics.update(metric_dct, n=x.size(0))
+            if save_preds:
+                # Collect denormalized, rounded predictions for saving
+                try:
+                    y_denorm, y_denorm_rounded, _, _ = self.forward(x)
+                    preds_batches.append(y_denorm_rounded.detach().cpu())
+                except Exception as e:
+                    raise e
 
         results = metrics.get_averages(prefix='eval_')
+
+        if save_preds:
+            import os
+            import numpy as np
+            os.makedirs(os.path.dirname(save_predictions_path), exist_ok=True)
+            preds = np.concatenate([p.numpy() for p in preds_batches], axis=0)
+            np.save(save_predictions_path, preds)
         return results
 
 
@@ -101,12 +117,12 @@ class ConstraintLearningTrainerBase(BaseTrainer, ABC):
         metrics = dict(loss=loss.item())
         y_uncon_denorm = solve_unconstrained(cost_vector=cost_vector, **self.variable_range)
         y_true_denorm = compute_denormalized_solution(y_true_norm, **self.true_variable_range)
+        # print(y_denorm_roudned)
         metrics.update(compute_metrics(y=y_denorm_roudned, y_true=y_true_denorm, y_uncon=y_uncon_denorm))
         for prefix, solution in solutions_denorm_dict.items():
             metrics.update(
                 compute_metrics(y=solution, y_true=y_true_denorm, y_uncon=y_uncon_denorm, prefix=prefix + "_"))
         return loss, metrics
-
 
 class RandomConstraintLearningTrainer(ConstraintLearningTrainerBase):
     def build_model(self, constraint_module_params, solver_module_params):

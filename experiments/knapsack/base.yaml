@@ -2,7 +2,7 @@
 
 "seed": null
 
-"working_dir": "results/knapsack/1"
+"working_dir": "results/knapsack/700"
 "use_ray": false
 "ray_params":
   "num_cpus": 20
@@ -11,8 +11,9 @@
   "base_dataset_path": "./data/custom_datasets" # Add correct dataset path here ".../datasets"
   "dataset_type": "knapsack"
   "cap": 100
+  "train_dataset_size": 700
   "loader_params":
-    "batch_size": 8
+    "batch_size": 64
     "shuffle": true
 
 "train_epochs": 100
@@ -22,4 +23,5 @@
   "loss_name": "MSE"
   "optimizer_name": "Adam"
   "optimizer_params":
-    "lr": 0.00005
+    # "lr": 0.00005
+    "lr": 0.0002
