@@ -8,11 +8,9 @@
 python3 main.py experiments/knapsack/comboptnet.yaml
 ```
 
-knapsack问题容量, knapsack场景会使用此配置写入 KnapsackConstraintLearningTrainer
+knapsack问题容量, knapsack场景会使用base.yaml写入 KnapsackConstraintLearningTrainer
 ```angular2html
 "data_params":
-  "base_dataset_path": "./data/custom_datasets" # Add correct dataset path here ".../datasets"
-  "dataset_type": "knapsack"
   "cap": 100
 ```
 
@@ -64,12 +62,14 @@ python scripts/generate_knapsack_solutions_gurobi.py \
 ### 计算后遗憾值
 只允许drop, 或者允许 drop and add在文件中切换函数
 
+```angular2html
 python scripts/two_stage_knapsack_eval.py \
 --dataset-dir data/custom_datasets_700/knapsack \
 --capacity 100 \
 --purchase-fee 1.0 \
 --compensation-fee 5 \
 --preview 5 --limit 500
+```
 
 
 
