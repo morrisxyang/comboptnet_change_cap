@@ -137,7 +137,8 @@ def two_stage_correction_obj_add_drop(
     # Objective: revenue from final x minus fixed penalty per change (add or drop)
     obj = (
         gp.quicksum(purchase_fee * prices[i] * x[i] for i in range(n))
-        - compensation_fee * (gp.quicksum(delta_plus[i] for i in range(n)) + gp.quicksum(delta_minus[i] for i in range(n)))
+        - compensation_fee * (gp.quicksum(delta_plus[i] for i in range(n)) +
+                              gp.quicksum(delta_minus[i] for i in range(n)))
     )
     model.setObjective(obj, GRB.MAXIMIZE)
 
@@ -163,7 +164,7 @@ def two_stage_correction_obj_add_drop(
     return final_x, objective, num_changes
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Two-stage knapsack correction evaluation (capacity=150)")
     parser.add_argument("--dataset-dir", type=str, default=resolve_default_dataset_dir(), help="Path to knapsack dataset directory")
     parser.add_argument("--capacity", type=float, default=150.0, help="Knapsack capacity")
@@ -172,7 +173,19 @@ def main():
     parser.add_argument("--preview", type=int, default=3, help="Print details for first N instances")
     parser.add_argument("--atol-obj", type=float, default=1e-6, help="Absolute tolerance for comparing objective values")
     parser.add_argument("--limit", type=int, default=300, help="Evaluate only the first N instances (<=0 uses all)")
-    args = parser.parse_args()
+    import sys
+    if len(sys.argv) == 1:
+        debug_args = [
+            "--dataset-dir", "../data/custom_datasets_700/knapsack",
+            "--capacity", "100",
+            "--purchase-fee", "1",
+            "--compensation-fee", "10",
+            "--preview", "5",
+            "--limit", "300",
+        ]
+        args = parser.parse_args(debug_args)
+    else:
+        args = parser.parse_args()
 
     print(f"args:{args}")
 
@@ -208,7 +221,7 @@ def main():
         pred = pred_sols[i].astype(float)
 
         # Two-stage correction (Stage 2 with fixed prediction)
-        x2, corr_obj, num_changes = two_stage_correction_obj_only_drop(
+        x2, corr_obj, num_changes = two_stage_correction_obj_add_drop(
             pred_sol=pred,
             weights=weights,
             prices=prices,
@@ -216,6 +229,9 @@ def main():
             purchase_fee=args.purchase_fee,
             compensation_fee=args.compensation_fee,
         )
+        if float(np.dot(weights, x2)) > args.capacity + 1e-9:
+            raise RuntimeError(f"WARNING: x2 solution infeasible at index {i}")
+
         corrected_objs[i] = corr_obj
         changed_counts[i] = num_changes
         # Components for post-hoc regret
@@ -230,7 +246,6 @@ def main():
 
         # Feasibility of the provided prediction
         pred_feasible[i] = float(np.dot(weights, pred_rounded)) <= args.capacity + 1e-9
-
         # True optimal objective for reference (Gurobi)
         x_opt, opt_obj = solve_knapsack_gurobi(weights, prices, args.capacity)
         optimal_objs[i] = float(args.purchase_fee * opt_obj)
@@ -239,7 +254,8 @@ def main():
         opt_vec_file = np.rint(opt_sols_file[i]).astype(int)
         # Feasibility check for file solution
         if float(np.dot(weights, opt_vec_file)) > args.capacity + 1e-9:
-            print(f"WARNING: reference solution infeasible at index {i}")
+            raise RuntimeError(f"WARNING: reference solution infeasible at index {i}")
+
         opt_obj_file_raw = float(np.dot(prices, opt_vec_file))
         if abs(opt_obj_file_raw - opt_obj) > args.atol_obj:
             mismatch_obj_count += 1
@@ -255,8 +271,8 @@ def main():
         if i < args.preview:
             print(f"Instance {i}:")
             print(f"  capacity: {args.capacity:.6f}, weights: {weights}, prices:{prices}")
-            print(f"  pred: {pred}")
-            print(f"  x2: {x2}")
+            print(f"  pred:  {pred_rounded}")
+            print(f"  x2:    {x2}")
             print(f"  x_opt: {x_opt}")
 
             print(f"  predicted_weight: {float(np.dot(weights, pred_rounded)):.6f} | feasible: {bool(pred_feasible[i])}")
@@ -283,8 +299,5 @@ def main():
 
     # print(f"Post-hoc regret: mean {np.mean(regrets):.6f} ± std {regrets.std():.6f}")
 
-
-if __name__ == "__main__":
-    main()
 
 
