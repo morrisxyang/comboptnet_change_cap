@@ -59,12 +59,12 @@ def solve_knapsack_gurobi(weights: np.ndarray, prices: np.ndarray, capacity: flo
 
 
 def two_stage_correction_obj_only_drop(
-    pred_sol: np.ndarray,
-    weights: np.ndarray,
-    prices: np.ndarray,
-    capacity: float,
-    purchase_fee: float,
-    compensation_fee: float,
+        pred_sol: np.ndarray,
+        weights: np.ndarray,
+        prices: np.ndarray,
+        capacity: float,
+        purchase_fee: float,
+        compensation_fee: float,
 ) -> Tuple[np.ndarray, float, int]:
     try:
         import gurobipy as gp
@@ -84,8 +84,8 @@ def two_stage_correction_obj_only_drop(
     sigma = model.addVars(n, vtype=GRB.BINARY, name="sigma")
 
     # Objective (fixed penalty per dropped item):
-    # obj = gp.quicksum(purchase_fee * prices[i] * x[i] - compensation_fee * prices[i] * sigma[i] for i in range(n))  # price-weighted penalty (disabled)
-    obj = (gp.quicksum(purchase_fee * prices[i] * x[i] for i in range(n)) - compensation_fee * gp.quicksum(sigma[i] for i in range(n)))
+    obj = gp.quicksum(purchase_fee * prices[i] * x[i] - compensation_fee * prices[i] * sigma[i] for i in range(n))  # price-weighted penalty (disabled)
+    # obj = (gp.quicksum(purchase_fee * prices[i] * x[i] for i in range(n)) - compensation_fee * gp.quicksum(sigma[i] for i in range(n)))
     model.setObjective(obj, GRB.MAXIMIZE)
 
     # Capacity after drops: (x - sigma) must satisfy capacity with real weights
@@ -107,12 +107,12 @@ def two_stage_correction_obj_only_drop(
 
 
 def two_stage_correction_obj_add_drop(
-    pred_sol: np.ndarray,
-    weights: np.ndarray,
-    prices: np.ndarray,
-    capacity: float,
-    purchase_fee: float,
-    compensation_fee: float,
+        pred_sol: np.ndarray,
+        weights: np.ndarray,
+        prices: np.ndarray,
+        capacity: float,
+        purchase_fee: float,
+        compensation_fee: float,
 ) -> Tuple[np.ndarray, float, int]:
     try:
         import gurobipy as gp
@@ -131,14 +131,14 @@ def two_stage_correction_obj_add_drop(
     # Final selection variables
     x = model.addVars(n, vtype=GRB.BINARY, name="x")
     # Change indicators relative to prediction
-    delta_plus = model.addVars(n, vtype=GRB.BINARY, name="delta_plus")   # add when pred=0
-    delta_minus = model.addVars(n, vtype=GRB.BINARY, name="delta_minus") # drop when pred=1
+    delta_plus = model.addVars(n, vtype=GRB.BINARY, name="delta_plus")  # add when pred=0
+    delta_minus = model.addVars(n, vtype=GRB.BINARY, name="delta_minus")  # drop when pred=1
 
     # Objective: revenue from final x minus fixed penalty per change (add or drop)
     obj = (
-        gp.quicksum(purchase_fee * prices[i] * x[i] for i in range(n))
-        - compensation_fee * (gp.quicksum(delta_plus[i] for i in range(n)) +
-                              gp.quicksum(delta_minus[i] for i in range(n)))
+            gp.quicksum(purchase_fee * prices[i] * x[i] for i in range(n))
+            - compensation_fee * (gp.quicksum(delta_plus[i] for i in range(n)) +
+                                  gp.quicksum(delta_minus[i] for i in range(n)))
     )
     model.setObjective(obj, GRB.MAXIMIZE)
 
@@ -166,21 +166,25 @@ def two_stage_correction_obj_add_drop(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Two-stage knapsack correction evaluation (capacity=150)")
-    parser.add_argument("--dataset-dir", type=str, default=resolve_default_dataset_dir(), help="Path to knapsack dataset directory")
+    parser.add_argument("--dataset-dir", type=str, default=resolve_default_dataset_dir(),
+                        help="Path to knapsack dataset directory")
     parser.add_argument("--capacity", type=float, default=150.0, help="Knapsack capacity")
     parser.add_argument("--purchase-fee", type=float, default=0.2, help="Purchase fee multiplier in objective")
-    parser.add_argument("--compensation-fee", type=float, default=1.0, help="Penalty multiplier for dropping predicted items")
+    parser.add_argument("--compensation-fee", type=float, default=1.0,
+                        help="Penalty multiplier for dropping predicted items")
     parser.add_argument("--preview", type=int, default=3, help="Print details for first N instances")
-    parser.add_argument("--atol-obj", type=float, default=1e-6, help="Absolute tolerance for comparing objective values")
+    parser.add_argument("--atol-obj", type=float, default=1e-6,
+                        help="Absolute tolerance for comparing objective values")
     parser.add_argument("--limit", type=int, default=300, help="Evaluate only the first N instances (<=0 uses all)")
     import sys
+
     if len(sys.argv) == 1:
         debug_args = [
             "--dataset-dir", "../data/custom_datasets_700/knapsack",
             "--capacity", "100",
             "--purchase-fee", "1",
-            "--compensation-fee", "10",
-            "--preview", "5",
+            "--compensation-fee", "5",
+            "--preview", "15",
             "--limit", "300",
         ]
         args = parser.parse_args(debug_args)
@@ -221,7 +225,7 @@ if __name__ == "__main__":
         pred = pred_sols[i].astype(float)
 
         # Two-stage correction (Stage 2 with fixed prediction)
-        x2, corr_obj, num_changes = two_stage_correction_obj_add_drop(
+        x2, corr_obj, num_changes = two_stage_correction_obj_only_drop(
             pred_sol=pred,
             weights=weights,
             prices=prices,
@@ -237,8 +241,9 @@ if __name__ == "__main__":
         # Components for post-hoc regret
         pred_rounded = np.rint(pred).astype(int)
 
-        # penalty_i = float(args.compensation_fee * np.dot(prices, pred_rounded - x2))  # price-weighted (disabled)
-        penalty_i = float(args.compensation_fee * np.sum(np.abs(pred_rounded - x2)))
+        penalty_i = float((args.compensation_fee-args.purchase_fee) * np.dot(prices, pred_rounded - x2))  # price-weighted (disabled)
+        # penalty_i = float((args.purchase_fee + args.compensation_fee) * np.dot(prices, pred_rounded - x2))
+        # penalty_i = float(args.compensation_fee * np.sum(np.abs(pred_rounded - x2)))
 
         obj2_i = float(args.purchase_fee * np.dot(prices, x2))
         penalties[i] = penalty_i
@@ -264,17 +269,26 @@ if __name__ == "__main__":
 
         regrets[i] = penalty_i + optimal_objs[i] - obj_stage2[i]
 
+
         # Perfect prediction stats
         if np.array_equal(pred_rounded, x_opt.astype(int)):
             perfect_pred_vec_count += 1
 
         if i < args.preview:
             print(f"Instance {i}:")
-            print(f"  capacity: {args.capacity:.6f}, weights: {weights}, prices:{prices}")
+            print(f"  capacity: {args.capacity:.6f} ")
+            print(f"  weights: {weights}, ")
+            print(f"  prices:{prices}")
+
+            print(f"---------------solution------------------")
             print(f"  pred:  {pred_rounded}")
             print(f"  x2:    {x2}")
             print(f"  x_opt: {x_opt}")
 
+            print(f"---------------regret------------------")
+            print("penalty_i + optimal_objs[i] - obj_stage2[i]", penalty_i + optimal_objs[i] - obj_stage2[i])
+            print("optimal_objs[i] - corrected_objs[i]", optimal_objs[i] - corrected_objs[i])
+            print(f"---------------detail------------------")
             print(f"  predicted_weight: {float(np.dot(weights, pred_rounded)):.6f} | feasible: {bool(pred_feasible[i])}")
             print(f"  corrected_obj (two-stage): {corrected_objs[i]:.6f}")
             print(f"  penalty: {penalties[i]:.6f}, obj_stage2: {obj_stage2[i]:.6f}")
@@ -290,14 +304,7 @@ if __name__ == "__main__":
     print(f"Reference vs Gurobi objective mismatches: {mismatch_obj_count}")
     print(f"Reference vs Gurobi vector mismatches:    {mismatch_vec_count}")
     print(f"Feasible prediction ratio: {pred_feasible.mean():.4f}")
-    # print(f"Avg changed items (when correcting): {changed_counts.mean():.3f}")
+    print(f"Sum changed items (when correcting): {sum(changed_counts)}")
+    print(f"Avg changed items (when correcting): {changed_counts.mean():.3f}")
     print(f"Post-hoc regret: mean {regrets.mean():.6f}")
     print(f"Perfect prediction rate (vector equality): {(perfect_pred_vec_count / n_instances):.4f} ({perfect_pred_vec_count}/{n_instances})")
-
-    # for idx in range(len(regrets)):
-    #     print(f"  [{idx}] {regrets[idx]:.6f}")
-
-    # print(f"Post-hoc regret: mean {np.mean(regrets):.6f} ± std {regrets.std():.6f}")
-
-
-
