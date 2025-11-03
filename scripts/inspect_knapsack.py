@@ -12,7 +12,8 @@ def summarize_array(name: str, arr: np.ndarray, sample_limit: int) -> None:
     if np.issubdtype(arr.dtype, np.number):
         try:
             arr_flat = arr.reshape(-1)
-            print(f"min: {arr_flat.min():.6f}, max: {arr_flat.max():.6f}, mean: {arr_flat.mean():.6f}, std: {arr_flat.std():.6f}")
+            print(
+                f"min: {arr_flat.min():.6f}, max: {arr_flat.max():.6f}, mean: {arr_flat.mean():.6f}, std: {arr_flat.std():.6f}")
         except Exception:
             pass
 
@@ -37,7 +38,8 @@ def summarize_array(name: str, arr: np.ndarray, sample_limit: int) -> None:
             # 1D or scalar
             if isinstance(sample, np.ndarray):
                 cols = min(20, sample.shape[0]) if sample.ndim == 1 else 1
-                print(f"sample[{i}] first {cols if sample.ndim == 1 else 1}: {sample[:cols] if sample.ndim == 1 else sample}")
+                print(
+                    f"sample[{i}] first {cols if sample.ndim == 1 else 1}: {sample[:cols] if sample.ndim == 1 else sample}")
             else:
                 print(f"sample[{i}]: {sample}")
 
@@ -63,58 +65,32 @@ def resolve_default_dataset_dir() -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="Inspect knapsack dataset npy files")
-    parser.add_argument("--dataset-dir", type=str, default=resolve_default_dataset_dir(), help="Path to datasets/knapsack directory")
+    parser.add_argument("--dataset-dir", type=str, default=resolve_default_dataset_dir(),
+                        help="Path to datasets/knapsack directory")
     parser.add_argument("--limit", type=int, default=3, help="Number of samples to preview per array")
     args = parser.parse_args()
 
     base = args.dataset_dir
-    files = {
-        "train_encodings": os.path.join(base, "train_encodings.npy"),
-        "train_sols": os.path.join(base, "train_sols_cap100.npy"),
-        "test_encodings": os.path.join(base, "test_encodings.npy"),
-        "test_sols": os.path.join(base, "test_sols_cap100.npy"),
-         #"weights_prices": os.path.join(base, "weights_prices.npy"),
-        "test_instances": os.path.join(base, "test_instances.npy"),
-        "test_sols_pred": os.path.join(base, "test_sols_pred.npy"),
-    }
-
     print(f"Dataset directory: {base}")
+
+    items = ["train_encodings.npy",
+             "train_sols_cap100.npy",
+             "train_instances.npy",
+             "test_encodings.npy",
+             "test_sols_cap100.npy",
+             "test_instances.npy"
+             ]
+
+    files = {}
+    for item in items:
+        files[item] = os.path.join(base, item)
+
     for key, path in files.items():
         if not os.path.isfile(path):
             raise FileNotFoundError(f"Missing required file: {path}")
 
-    # Load
-    train_enc = np.load(files["train_encodings"], allow_pickle=False)
-    train_sols = np.load(files["train_sols"], allow_pickle=False)
-    test_enc = np.load(files["test_encodings"], allow_pickle=False)
-    test_sols = np.load(files["test_sols"], allow_pickle=False)
-    # weights_prices = np.load(files["weights_prices"], allow_pickle=False)
-    test_instances = np.load(files["test_instances"], allow_pickle=False)
-    test_sols_pred = np.load(files["test_sols_pred"], allow_pickle=False)
-
-
-    # Summaries
-    # summarize_array("train_encodings", train_enc, args.limit)
-    # summarize_array("train_sols", train_sols, args.limit)
-    # summarize_array("test_encodings", test_enc, args.limit)
-    # summarize_array("test_sols", test_sols, args.limit)
-    # summarize_array("weights_prices", weights_prices, args.limit)
-    # summarize_array("test_instances", test_instances, args.limit)
-    summarize_array("test_sols_pred", test_sols_pred, args.limit)
-
-
-    # Solution sanity checks
-    # check_binary_solutions("train_sols", train_sols)
-    # check_binary_solutions("test_sols", test_sols)
-    #
-    # # Cross-check shapes
-    # if train_enc.shape[0] != train_sols.shape[0]:
-    #     print(f"WARNING: train_encodings and train_sols count mismatch: {train_enc.shape[0]} vs {train_sols.shape[0]}")
-    # if test_enc.shape[0] != test_sols.shape[0]:
-    #     print(f"WARNING: test_encodings and test_sols count mismatch: {test_enc.shape[0]} vs {test_sols.shape[0]}")
-
+    for key, path in files.items():
+        summarize_array(key, np.load(files[key], allow_pickle=False), args.limit)
 
 if __name__ == "__main__":
     main()
-
-
