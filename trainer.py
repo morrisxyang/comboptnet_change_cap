@@ -20,7 +20,13 @@ class BaseTrainer(ABC):
                  model_params, seed):
         set_seed(seed)
         self.use_cuda = use_cuda
-        self.device = 'cuda' if self.use_cuda else 'cpu'
+        if torch.cuda.is_available() and self.use_cuda:
+            self.device = 'cuda'
+        # elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+        #     self.device = 'mps'
+        else:
+            self.device = 'cpu'
+        print('Using device: %s' % self.device)
 
         self.train_iterator = train_iterator
         self.test_iterator = test_iterator

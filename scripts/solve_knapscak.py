@@ -1,6 +1,9 @@
 import gurobipy as gp
 from gurobipy import GRB
 
+
+# 背包的容量
+capacity = 100
 data = [[26, 37.2],
         [25, 19],
         [31, 37],
@@ -13,16 +16,9 @@ data = [[26, 37.2],
         [32, 25.5]]
 
 # 物品的重量
-# weights = [10, 20, 30]
-weights = [row[0] for row in data]
-
+weights =  [29.0, 23.0, 15.0, 30.0, 25.0, 25.0, 26.0, 20.0, 17.0, 29.0]
 # 物品的价值
-# values = [60, 100, 120]
-values = [row[1] for row in data]
-
-
-# 背包的容量
-capacity = 100
+values =  [29.9, 15.1, 35.7, 19.1, 19.4, 21.6, 40.7, 30.0, 14.2, 17.1]
 
 
 if __name__ == '__main__':

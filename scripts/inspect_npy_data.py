@@ -63,23 +63,47 @@ def resolve_default_dataset_dir() -> str:
     return os.path.join(repo_root, "data/original_datasets", "knapsack")
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Inspect knapsack dataset npy files")
     parser.add_argument("--dataset-dir", type=str, default=resolve_default_dataset_dir(),
                         help="Path to datasets/knapsack directory")
     parser.add_argument("--limit", type=int, default=3, help="Number of samples to preview per array")
     args = parser.parse_args()
 
+    import sys
+    if len(sys.argv) == 1:
+        debug_args = [
+            # "--dataset-dir", "../data/custom_datasets_700/knapsack",
+            "--dataset-dir", "../",
+            "--limit", "10",
+        ]
+        args = parser.parse_args(debug_args)
+    else:
+        args = parser.parse_args()
+
     base = args.dataset_dir
     print(f"Dataset directory: {base}")
 
-    items = ["train_encodings.npy",
-             "train_sols_cap100.npy",
-             "train_instances.npy",
-             "test_encodings.npy",
-             "test_sols_cap100.npy",
-             "test_instances.npy"
-             ]
+    items = [
+        "predicted_sols_cap100.npy",
+        # "train_encodings.npy",
+        # "train_sols_cap100.npy",
+        # "train_instances.npy",
+        # "true_sols_cap100.npy",
+        # "test_encodings.npy",
+        # "test_sols_cap100.npy",
+        # "test_instances.npy",
+
+        # "test_sols_cap100.npy",
+        # "test_sols_cap150.npy",
+        # "test_sols_cap200.npy",
+        # "test_sols_cap250.npy",
+
+        # "train_sols_cap100.npy",
+        # "train_sols.npy",
+        # "test_sols_cap100.npy",
+        # "test_sols.npy",
+    ]
 
     files = {}
     for item in items:
@@ -92,5 +116,3 @@ def main():
     for key, path in files.items():
         summarize_array(key, np.load(files[key], allow_pickle=False), args.limit)
 
-if __name__ == "__main__":
-    main()

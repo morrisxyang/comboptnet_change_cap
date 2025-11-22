@@ -5,11 +5,12 @@ from typing import Tuple
 import numpy as np
 
 
-def load_data(dataset_dir: str) -> Tuple[np.ndarray, np.ndarray]:
-    instances_path = os.path.join(dataset_dir, "test_instances.npy")
-    sols_path = os.path.join(dataset_dir, "test_sols_pred_cap150.npy")
+def load_data(dataset_dir, instance_file, sols_file: str) -> Tuple[np.ndarray, np.ndarray]:
     # instances_path = os.path.join(dataset_dir, "train_instances.npy")
     # sols_path = os.path.join(dataset_dir, "train_sols_cap150.npy")
+    instances_path = os.path.join(dataset_dir, instance_file)
+    sols_path = os.path.join(dataset_dir, sols_file)
+
     if not os.path.isfile(instances_path):
         raise FileNotFoundError(f"Missing file: {instances_path}")
     if not os.path.isfile(sols_path):
@@ -52,8 +53,8 @@ def is_binary_vector(vec: np.ndarray, atol: float = 1e-8) -> bool:
     return np.all((np.isclose(vec, 0.0, atol=atol)) | (np.isclose(vec, 1.0, atol=atol)))
 
 
-def validate(dataset_dir: str, capacity: float, atol_obj: float) -> int:
-    instances, sols = load_data(dataset_dir)
+def validate(dataset_dir, instance_file, sols_file: str, capacity: float, atol_obj: float) -> int:
+    instances, sols = load_data(dataset_dir, instance_file, sols_file)
     if instances.ndim != 3 or instances.shape[2] != 2:
         raise ValueError(f"Expected instances shape (N, 10, 2). Got {instances.shape}")
     if sols.ndim != 2 or sols.shape[1] != instances.shape[1]:
@@ -130,27 +131,32 @@ def validate(dataset_dir: str, capacity: float, atol_obj: float) -> int:
     return len(mismatches)
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Validate knapsack test solutions with Gurobi")
-    parser.add_argument(
-        "--dataset-dir",
-        type=str,
-        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "datasets", "knapsack"),
-        help="Directory containing test_instances.npy and test_sols.npy",
-    )
+    parser.add_argument("--dataset-dir", type=str)
     parser.add_argument("--capacity", type=float, default=100.0, help="Knapsack capacity")
-    parser.add_argument(
-        "--atol-obj",
-        type=float,
-        default=1e-6,
-        help="Absolute tolerance when comparing objective values",
-    )
-    args = parser.parse_args()
+    parser.add_argument("--atol-obj", type=float, default=1e-6)
+    parser.add_argument("--instance_file", type=str, default=1e-6)
+    parser.add_argument("--sols_file", type=str, default=1e-6)
 
-    mismatches = validate(args.dataset_dir, args.capacity, args.atol_obj)
+    import sys
+    if len(sys.argv) == 1:
+        debug_args = [
+            "--dataset-dir", "../data/custom_datasets_700/knapsack",
+            "--capacity", "50",
+            # "--instance_file", "train_instances.npy",
+            # "--sols_file", "train_sols_cap50.npy"
+            "--instance_file", "test_instances.npy",
+            "--sols_file", "test_sols_cap50.npy"
+
+        ]
+        args = parser.parse_args(debug_args)
+    else:
+        args = parser.parse_args()
+    mismatches = validate(args.dataset_dir,
+                          args.instance_file,
+                          args.sols_file,
+                          args.capacity,
+                          args.atol_obj)
     if mismatches > 0:
         exit(1)
-
-
-if __name__ == "__main__":
-    main()

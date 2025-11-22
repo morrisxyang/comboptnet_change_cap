@@ -2,7 +2,7 @@
 
 "seed": null
 
-"working_dir": "results/knapsack/700"
+"working_dir": "results/knapsack/samples700"
 "use_ray": false
 "ray_params":
   "num_cpus": 20
@@ -13,7 +13,7 @@
   "cap": 100
   "train_dataset_size": 700 # only select part of whole train dataset.
   "loader_params":
-    "batch_size": 64 # batch size
+    "batch_size": 8 # batch size
     "shuffle": true # Not affect test dataset, we need the ordered results of the test set to verify
                     # (the model/performance).
 
@@ -24,5 +24,5 @@
   "loss_name": "MSE"
   "optimizer_name": "Adam"
   "optimizer_params":
-    # "lr": 0.00005 # for batch size: 8
-    "lr": 0.0002   # for batch size: 64
+    "lr": 0.00005 # for batch size: 8
+    # "lr": 0.0002   # for batch size: 64

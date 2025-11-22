@@ -60,7 +60,7 @@ def main(working_dir, seed, train_epochs, eval_every, use_ray, ray_params, data_
 
     # Save test predictions at final evaluation
     import numpy as np  # retained import if needed elsewhere
-    save_path = path.join(working_dir, f"test_sols_pred_cap{cap}.npy")
+    save_path = path.join(working_dir, f"test_sols_pred_cap{cap}_{timestamp}.npy")
     eval_metrics = trainer.evaluate(save_predictions_path=save_path)
     print_eval_acc(eval_metrics)
 

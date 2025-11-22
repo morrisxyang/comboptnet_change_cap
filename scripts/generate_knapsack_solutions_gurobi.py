@@ -6,9 +6,9 @@ from typing import Tuple
 import numpy as np
 
 
-def load_instances(dataset_dir: str) -> np.ndarray:
+def load_instances(dataset_dir, instance_file: str) -> np.ndarray:
     # instances_path = os.path.join(dataset_dir, "test_instances.npy")
-    instances_path = os.path.join(dataset_dir, "train_instances.npy")
+    instances_path = os.path.join(dataset_dir, instance_file)
     if not os.path.isfile(instances_path):
         raise FileNotFoundError(f"Missing file: {instances_path}")
     instances = np.load(instances_path, allow_pickle=False)  # shape: (N, 10, 2) => [weight, price]
@@ -44,19 +44,28 @@ def solve_knapsack_gurobi(weights: np.ndarray, prices: np.ndarray, capacity: flo
     return x_opt, obj
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate knapsack solutions with Gurobi for a given capacity")
-    parser.add_argument(
-        "--dataset-dir",
-        type=str,
-        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "datasets", "knapsack"),
-        help="Directory containing test_instances.npy",
-    )
-    parser.add_argument("--capacity", type=float, default=150.0, help="Knapsack capacity")
+    parser.add_argument("--dataset-dir", type=str)
+    parser.add_argument("--instance-file", type=str)
+    parser.add_argument("--capacity", type=float, default=100.0, help="Knapsack capacity")
     parser.add_argument("--preview", type=int, default=5, help="Print details for first N instances")
     args = parser.parse_args()
 
-    instances = load_instances(args.dataset_dir)
+    import sys
+    if len(sys.argv) == 1:
+        debug_args = [
+            "--dataset-dir", "../data/custom_datasets_700/knapsack",
+            "--instance-file", "train_instances.npy",
+            # "--instance-file", "test_instances.npy",
+            "--capacity", "50",
+            "--preview", "5"
+        ]
+        args = parser.parse_args(debug_args)
+    else:
+        args = parser.parse_args()
+
+    instances = load_instances(args.dataset_dir, args.instance_file)
     n_instances, n_items, _ = instances.shape
 
     solutions = np.zeros((n_instances, n_items), dtype=np.int64)
@@ -85,7 +94,8 @@ def main():
 
     cap_int = int(round(args.capacity))
     # save_path = os.path.join(args.dataset_dir, f"test_sols_cap{cap_int}.npy")
-    save_path = os.path.join(args.dataset_dir, f"train_sols_cap{cap_int}.npy")
+    prefix = args.instance_file.split("_")[0]
+    save_path = os.path.join(args.dataset_dir, f"{prefix}_sols_cap{cap_int}.npy")
     np.save(save_path, solutions)
 
     print("")
@@ -97,8 +107,5 @@ def main():
     print(f"Avg items chosen: {np.mean(np.sum(solutions, axis=1)):.6f}")
     print(f"Total time: {elapsed:.3f}s | per-instance: {elapsed / n_instances:.6f}s")
 
-
-if __name__ == "__main__":
-    main()
 
 

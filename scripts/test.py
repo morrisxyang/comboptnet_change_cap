@@ -8,3 +8,9 @@ if __name__ == '__main__':
     print(x_opt.dot(price))
     print(x_opt - x2)
     print(42.8 + 14.5 -19.2-37.2)
+
+    print((300* 10* (1-0.7864) *5)/300)
+    print(300* 10* (1-0.7864))
+
+    weight = [18, 31, 35, 25, 28, 15, 27, 20, 22, 30]
+    print(sum(weight))
